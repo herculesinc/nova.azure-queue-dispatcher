@@ -1,0 +1,33 @@
+{
+  "name": "@nova/azure-queue-dispatcher",
+  "version": "0.1.0",
+  "description": "Azure queue-based dispatcher for Nova framework",
+  "keywords": [
+    "nova",
+    "azure-queue",
+    "dispatcher"
+  ],
+  "main": "index.js",
+  "typings": "nova-azure-queue-dispatcher.d.ts",
+  "license": "MIT",
+  "author": {
+    "name": "Credo360, Inc.",
+    "email": "developers@credo360.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/herculesinc/nova.azure-queue-dispatcher.git"
+  },
+  "engines": {
+    "node": "10.15.x"
+  },
+  "dependencies": {
+    "@nova/core": "0.2.x",
+    "azure-storage": "2.10.x"
+  },
+  "devDependencies": {
+    "@types/node": "10.12.x",
+    "del": "3.0.x",
+    "gulp": "4.0.x"
+  }
+}
