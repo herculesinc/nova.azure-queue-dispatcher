@@ -3,15 +3,28 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // IMPORTS
 // ================================================================================================
 const nova = require("@nova/core");
-const azure_storage_1 = require("azure-storage");
+const storage_queue_1 = require("@azure/storage-queue");
 const Client_1 = require("./lib/Client");
 // RE-EXPORTS
 // ================================================================================================
-var Error_1 = require("./lib/Error");
-exports.DispatcherError = Error_1.DispatcherError;
+var errors_1 = require("./lib/errors");
+exports.DispatcherError = errors_1.DispatcherError;
 // MODULE VARIABLES
 // ================================================================================================
-const DEFAULT_REQUEST_TIMEOUT = 3000; // 3 seconds
+const DEFAULT_TRY_DELAY = 4000; // 4 seconds
+const DEFAULT_MAX_TRIES = 4;
+// declared here because storage queue SDK does not expose this
+var RetryPolicyType;
+(function (RetryPolicyType) {
+    RetryPolicyType[RetryPolicyType["EXPONENTIAL"] = 0] = "EXPONENTIAL";
+    RetryPolicyType[RetryPolicyType["FIXED"] = 1] = "FIXED";
+})(RetryPolicyType || (RetryPolicyType = {}));
+const DEFAULT_RETRY_OPTIONS = {
+    retryPolicyType: RetryPolicyType.FIXED,
+    maxTries: DEFAULT_MAX_TRIES,
+    retryDelayInMs: DEFAULT_TRY_DELAY,
+    tryTimeoutInMs: DEFAULT_TRY_DELAY - 1000
+};
 // DISPATCHER CLASS
 // ================================================================================================
 class Dispatcher {
@@ -20,26 +33,36 @@ class Dispatcher {
     constructor(config) {
         if (!config)
             throw TypeError('Cannot create Dispatcher: config is undefined');
-        // determine request timeout
-        const requestTimeout = config.requestTimeout || DEFAULT_REQUEST_TIMEOUT;
-        // create retry policy
-        let retryPolicy;
-        if (!config.retryPolicy) {
-            retryPolicy = new azure_storage_1.LinearRetryPolicyFilter();
-        }
-        else {
-            if (config.retryPolicy.type !== 'linear')
-                throw new TypeError('Retry policy type is invalid');
-            retryPolicy = new azure_storage_1.LinearRetryPolicyFilter(config.retryPolicy.retryCount, config.retryPolicy.retryInterval);
-        }
+        // build credentials
+        const credentials = new storage_queue_1.SharedKeyCredential(config.account, config.accessKey);
+        const retryOptions = buildRetryOptions(config.retryPolicy);
+        const pipeline = storage_queue_1.StorageURL.newPipeline(credentials, { retryOptions });
         // initialize class variables
         this.source = { name: config.name || 'dispatcher', type: 'azure queue' };
-        this.client = azure_storage_1.createQueueService(config.account, config.accessKey).withFilter(retryPolicy);
-        this.client.defaultClientRequestTimeoutInMs = requestTimeout;
+        this.service = new storage_queue_1.ServiceURL(`https://${config.account}.queue.core.windows.net`, pipeline);
     }
     getClient(logger) {
-        return new Client_1.DispatcherClient(this.client, logger || nova.logger, this.source);
+        if (logger === undefined) {
+            logger = nova.logger;
+        }
+        return new Client_1.DispatcherClient(this.service, logger, this.source);
     }
 }
 exports.Dispatcher = Dispatcher;
+// HELPER FUNCTIONS
+// ================================================================================================
+function buildRetryOptions(config) {
+    if (!config)
+        return DEFAULT_RETRY_OPTIONS;
+    if (config.type !== 'linear')
+        throw new TypeError('Retry policy type is invalid');
+    // TODO: validate parameters
+    const retryOptions = {
+        retryPolicyType: RetryPolicyType.FIXED,
+        maxTries: config.retryCount || DEFAULT_MAX_TRIES,
+        retryDelayInMs: config.retryInterval || DEFAULT_TRY_DELAY,
+        tryTimeoutInMs: (config.retryInterval || DEFAULT_TRY_DELAY) - 1000
+    };
+    return retryOptions;
+}
 //# sourceMappingURL=index.js.map

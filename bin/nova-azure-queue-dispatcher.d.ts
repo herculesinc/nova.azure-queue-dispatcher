@@ -11,7 +11,6 @@ declare module "@nova/azure-queue-dispatcher" {
 		name?           : string;
         account         : string;
         accessKey       : string;
-        requestTimeout? : number;
         retryPolicy?    : DispatcherRetryPolicy;
     }
 
@@ -25,12 +24,11 @@ declare module "@nova/azure-queue-dispatcher" {
 
         constructor(config: DispatcherConfig);
 
-        getClient(logger?: Logger): DispatcherClient;
+        getClient(logger?: Logger | null): DispatcherClient;
     }
 
     export interface DispatcherClient {
-        send(task: Task)    : Promise<any>;
-        send(tasks: Task[]) : Promise<any>;
+        send(tasks: Task | Task[]) : Promise<any>;
     }
 
     export class DispatcherError extends Exception {

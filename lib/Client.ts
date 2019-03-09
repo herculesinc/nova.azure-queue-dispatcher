@@ -1,21 +1,21 @@
 // IMPORTS
 // ================================================================================================
 import { Task, Logger, TraceSource, TraceCommand } from '@nova/azure-queue-dispatcher';
-import { QueueService } from 'azure-storage';
-import { DispatcherError } from './Error';
+import { Aborter, ServiceURL, QueueURL, MessagesURL, Models } from '@azure/storage-queue';
+import { DispatcherError } from './errors';
 
 // CLASS DEFINITION
 // ================================================================================================
 export class DispatcherClient {
 
-    private readonly client : QueueService;
-    private readonly logger : Logger;
-    private readonly source : TraceSource;
+    private readonly service    : ServiceURL;
+    private readonly source     : TraceSource;
+    private readonly logger?    : Logger;
 
     // CONSTRUCTOR
     // --------------------------------------------------------------------------------------------
-    constructor(client: QueueService, logger: Logger, source: TraceSource) {
-        this.client = client;
+    constructor(service: ServiceURL, logger: Logger, source: TraceSource) {
+        this.service = service;
         this.logger = logger;
         this.source = source;
     }
@@ -28,7 +28,7 @@ export class DispatcherClient {
 
         // validate tasks
         const messages: string[] = [];
-        const options: QueueService.CreateMessageRequestOptions[] = [];
+        const options: Models.MessagesEnqueueOptionalParams[] = [];
         for (let task of tasks) {
             if (typeof task.name !== 'string') throw new TypeError('Task name is invalid');
             if (task.ttl !== undefined) {
@@ -59,7 +59,7 @@ export class DispatcherClient {
 
     // PRIVATE METHODS
     // --------------------------------------------------------------------------------------------
-    private sendMessage(queue: string, messageText: string, options: QueueService.CreateMessageRequestOptions) {        
+    private async sendMessage(queue: string, messageText: string, options: Models.MessagesEnqueueOptionalParams) {
         const start = Date.now();
 
         const command: TraceCommand = {
@@ -67,14 +67,15 @@ export class DispatcherClient {
             text    : `${messageText}`
         };
 
-        return new Promise((resolve, reject) => {
-            this.client.createMessage(queue, messageText, options, (error, response) => {
-                this.logger.trace(this.source, command.name, Date.now() - start, !error);
-                if (error) {
-                    return reject(new DispatcherError(error, queue, command));
-                }
-                resolve();
-            });
-        });
+        try {
+            const queueUrl = QueueURL.fromServiceURL(this.service, queue);
+            const messagesUrl = MessagesURL.fromQueueURL(queueUrl);
+            const response = await messagesUrl.enqueue(Aborter.none, messageText, options);
+            this.logger && this.logger.trace(this.source, command.name, Date.now() - start, true);
+        }
+        catch (error) {
+            this.logger && this.logger.trace(this.source, command.name, Date.now() - start, false);
+            throw new DispatcherError(error, queue, command);
+        }
     }
 }

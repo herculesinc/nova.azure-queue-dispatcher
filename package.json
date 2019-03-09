@@ -1,6 +1,6 @@
 {
   "name": "@nova/azure-queue-dispatcher",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Azure queue-based dispatcher for Nova framework",
   "keywords": [
     "nova",
@@ -22,12 +22,12 @@
     "node": "10.15.x"
   },
   "dependencies": {
-    "@nova/core": "0.2.x",
-    "azure-storage": "2.10.x"
+    "@azure/storage-queue": "10.1.x",
+    "@nova/core": "0.3.x"
   },
   "devDependencies": {
     "@types/node": "10.12.x",
-    "del": "3.0.x",
+    "del": "4.0.x",
     "gulp": "4.0.x"
   }
 }

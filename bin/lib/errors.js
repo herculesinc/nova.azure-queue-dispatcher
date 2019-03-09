@@ -16,4 +16,4 @@ class DispatcherError extends core_1.Exception {
     }
 }
 exports.DispatcherError = DispatcherError;
-//# sourceMappingURL=Error.js.map
+//# sourceMappingURL=errors.js.map
