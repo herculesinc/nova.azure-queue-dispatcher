@@ -8,9 +8,10 @@ import { DispatcherError } from './errors';
 // ================================================================================================
 export class DispatcherClient {
 
-    private readonly service    : ServiceURL;
-    private readonly source     : TraceSource;
-    private readonly logger?    : Logger;
+    private readonly service        : ServiceURL;
+    private readonly source         : TraceSource;
+    private readonly logger?        : Logger;
+    private readonly operationId?   : string;
 
     // CONSTRUCTOR
     // --------------------------------------------------------------------------------------------
@@ -18,6 +19,10 @@ export class DispatcherClient {
         this.service = service;
         this.logger = logger;
         this.source = source;
+
+        if (logger) {
+            this.operationId = logger.operationId;
+        }
     }
 
     // PUBLIC METHODS
@@ -42,10 +47,12 @@ export class DispatcherClient {
                 }
             }
             
-            messages.push(JSON.stringify(task.payload));
+            let message = { opid: this.operationId, payload: task.payload };
+            messages.push(Buffer.from(JSON.stringify(message),'utf8').toString('base64'));
             options.push({
-                visibilityTimeout: task.delay,
-                messageTimeToLive: task.ttl
+                visibilityTimeout : task.delay,
+                messageTimeToLive : task.ttl,
+                requestId         : this.operationId
             });
         }
         

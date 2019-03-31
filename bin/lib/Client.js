@@ -11,6 +11,9 @@ class DispatcherClient {
         this.service = service;
         this.logger = logger;
         this.source = source;
+        if (logger) {
+            this.operationId = logger.operationId;
+        }
     }
     // PUBLIC METHODS
     // --------------------------------------------------------------------------------------------
@@ -36,10 +39,12 @@ class DispatcherClient {
                     throw new errors_1.DispatcherError(err, task.name);
                 }
             }
-            messages.push(JSON.stringify(task.payload));
+            let message = { opid: this.operationId, payload: task.payload };
+            messages.push(Buffer.from(JSON.stringify(message), 'utf8').toString('base64'));
             options.push({
                 visibilityTimeout: task.delay,
-                messageTimeToLive: task.ttl
+                messageTimeToLive: task.ttl,
+                requestId: this.operationId
             });
         }
         // dispatch messages
