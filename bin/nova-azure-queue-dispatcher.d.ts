@@ -24,7 +24,7 @@ declare module "@nova/azure-queue-dispatcher" {
 
         constructor(config: DispatcherConfig);
 
-        getClient(logger?: Logger | null): DispatcherClient;
+        getClient(operationId?: string, logger?: Logger | null): DispatcherClient;
     }
 
     export interface DispatcherClient {

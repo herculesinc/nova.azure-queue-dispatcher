@@ -41,11 +41,18 @@ class Dispatcher {
         this.source = { name: config.name || 'dispatcher', type: 'azure queue' };
         this.service = new storage_queue_1.ServiceURL(`https://${config.account}.queue.core.windows.net`, pipeline);
     }
-    getClient(logger) {
+    getClient(operationId, logger) {
+        if (operationId !== undefined) {
+            if (typeof operationId !== 'string')
+                throw new TypeError('Operation ID is invalid');
+        }
         if (logger === undefined) {
             logger = nova.logger;
         }
-        return new Client_1.DispatcherClient(this.service, logger, this.source);
+        else if (logger === null) {
+            logger = undefined;
+        }
+        return new Client_1.DispatcherClient(this.service, this.source, operationId, logger);
     }
 }
 exports.Dispatcher = Dispatcher;

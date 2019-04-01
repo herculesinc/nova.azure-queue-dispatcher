@@ -48,11 +48,19 @@ export class Dispatcher {
         this.service = new ServiceURL(`https://${config.account}.queue.core.windows.net`, pipeline);
     }
 
-    getClient(logger?: Logger) {
+    getClient(operationId?: string, logger?: Logger | null) {
+        if (operationId !== undefined) {
+            if (typeof operationId !== 'string') throw new TypeError('Operation ID is invalid');
+        }
+
         if (logger === undefined) {
             logger = nova.logger;
         }
-        return new DispatcherClient(this.service, logger, this.source);
+        else if (logger === null) {
+            logger = undefined;
+        }
+        
+        return new DispatcherClient(this.service, this.source, operationId, logger);
     }
 }
 

@@ -7,13 +7,11 @@ const errors_1 = require("./errors");
 class DispatcherClient {
     // CONSTRUCTOR
     // --------------------------------------------------------------------------------------------
-    constructor(service, logger, source) {
+    constructor(service, source, operationId, logger) {
         this.service = service;
-        this.logger = logger;
         this.source = source;
-        if (logger) {
-            this.operationId = logger.operationId;
-        }
+        this.logger = logger;
+        this.operationId = operationId;
     }
     // PUBLIC METHODS
     // --------------------------------------------------------------------------------------------
@@ -39,7 +37,7 @@ class DispatcherClient {
                     throw new errors_1.DispatcherError(err, task.name);
                 }
             }
-            let message = { opid: this.operationId, payload: task.payload };
+            let message = { _meta: { opid: this.operationId }, _data: task.payload };
             messages.push(Buffer.from(JSON.stringify(message), 'utf8').toString('base64'));
             options.push({
                 visibilityTimeout: task.delay,
